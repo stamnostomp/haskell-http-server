@@ -19,3 +19,41 @@ acceptLoop sock = do
   (conn, _addr) <- do
     forkIO (handleConnection conn)
     acceptLoop sock
+
+data Method = GET | POST | PUT | DELETE | UnknownMethod BS.ByteString
+  deriving (Show, Eq)
+
+data Request = Request
+  { method :: Method
+  , path :: BS.ByteString
+  , headers :: [(BS.ByteString, BS.ByteString)]
+  , body :: BS.ByteString
+  } deriving (Show)
+
+
+parseMethod :: BS.ByteString -> Method
+parseMethod "GET" = GET
+parseMethod "POST" = POST
+parseMethod "PUT" = PUT
+parseMethod "DELETE" = DELETE
+parseMethod other = UnknownMethod other
+
+
+parseRequest :: BS.ByteString -> Maybe Request
+parseRequest raw = do
+  let (headerSection, rest) = splitOn "/r/n/r/n" raw
+        ls                    = BS.lines headerSection
+  requestLine <- case ls of { (x:_)  -> Just x; _ -> Nothing}
+  let parts = BS.words requestLine
+  (m, p) <- case parts of { (m:p:_) -> Just (m, p); _ -> Nothing }
+  let headerLines = drop 1 ls
+      hdrs        = map parseHeader headerLines
+  return Request
+    { method = parseMethod
+    , path   = p
+    , headers = hdrs
+    , body = rest
+    }
+
+
+
