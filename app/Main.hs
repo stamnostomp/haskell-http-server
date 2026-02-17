@@ -55,5 +55,19 @@ parseRequest raw = do
     , body = rest
     }
 
+parseHeader :: BS.ByteString -> (BS.ByteString, BS.ByteString)
+parseHeader line =
+  let (k, v) = BS.break (== ':') line
+  in (BS.strip k, BS.strip (BS.drop 1 v))
+
+-- helpers
+
+splitOn :: BS.ByteString -> BS.ByteString -> (BS.ByteString, BS.ByteString)
+splinOn delim bs =
+  case BS.breakSubstring delim bs of
+    (before,after)
+      | BS.null after -> (before, BS.empty)
+      | otherwise     -> (before, BS.drop (BS.length delim) after)
+
 
 
